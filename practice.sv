@@ -805,3 +805,305 @@ interface axi_if (input logic aclk);
   logic BVALID, BREADY;
 endinterface
 
+
+enum bit [1:0] {fixed = 2'b00, 
+  incr=2'b01, wrap=2'b10
+  } axburst_t;
+
+enum bit [1:0] {okay, exokay, slverror, decerror} resp_t;
+
+class axi_item extends uvm_sequence_item;
+  `uvm_object_utils(axi_item)
+
+
+  rand bit [31:0] AXADDR;
+  rand bit        write;
+  rand bit [7:0]  AXLEN;
+  rand axburst_t  AXBURST;
+  rand bit [2:0]  AXSIZE;
+  rand bit [3:0]  AXID;
+  rand bit [31:0] AWDATA [];
+  rand bit [3:0]  WSTRB [];
+
+  bit [31:0] RDATA [$];
+  resp_t     XRESP [$];
+  bit [3:0]  XID;
+
+  constraint len_c{
+    (AXBURST==fixed)-> AXLEN inside {1, 3, 7, 15};
+    (AXBURST==incr) -> AXLEN inside {[0:255]};
+    (AXBURST==wrap) -> AXLEN inside {[0:15]};
+    }
+
+  constraint boundary_4kb {
+    (AXBURST==incr) -> AXADDR[11:0] + (AXLEN+1)<<AXSIZE <= 4096;
+    }
+
+  constraint c_align {
+    (addr & ((32'(1) << size) - 1) == 0;)
+    }
+
+  function new(string n = "axi_item");
+    super.new(n);
+  endfunction
+
+  function string convert2string();
+    return $sformatf("", );
+  endfunction
+endclass
+
+
+class ahb_d extends uvm_driver#(txn);
+  `uvm_component_utils(ahb_d)
+
+  virtual mif vif;
+
+  function new(string n = "ahb_d", uvm_component p);
+    super.new(n, p);
+  endfunction
+
+  function void build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    if(!uvm_config_db#(virtual mif)::get(this, "", "vif", vif)) `uvm_fatal("", "");
+  endfunction
+
+  task drv_dut;
+    do @(vif.cb);
+    while(!vif.cb.hready);
+
+    vif.cb.addr <= req.addr;
+    vif.cb.write <= req.write;
+
+    do @(vif.cb);
+    while(!vif.cb.hready);
+
+    vif.cb.wdata <= req.wdata;
+
+  endtask
+
+  task run_phase(uvm_phase phase);
+    wait(vif.resetn === 1'b1);
+
+    forever begin
+      seq_item_port.get_next_item(req);
+      drv_dut;
+      seq_item_port.item_done();
+    end
+  endtask
+endclass
+
+enum bit [2:0] {single, incr, wrap4, incr4, wrap8, incr8, wrap16, incr16} hburst_t;
+
+class ahb_item extends uvm_sequence_item;
+  `uvm_object_utils(ahb_item)
+
+  // sel, write, mlock, ready, resp
+  // trans 2
+  // burst size 3
+  // prot 4
+
+  rand bit hwrite;
+  rand bit hmlock;
+  rand hburst_t hburst;
+  rand bit [2:0] hsize;
+  rand bit [31:0] haddr;
+  rand bit [31:0] hwdata;
+  rand int len;
+  bit resp;
+  bit [31:0] hrdata [$];
+
+  constraint len_c {
+    
+    }
+
+  haddr[9:0] + 
+  function new(string n = "ahb_item");
+    super.new(n);
+  endfunction
+endclass
+
+
+
+class axi_d extends uvm_driver#(txn);
+  `uvm_component_utils(axi_d)
+
+  virtual mif vif;
+
+  function new(string n = "axi_d", uvm_component p);
+    super.new(n, p);
+  endfunction
+
+  function build_phase(uvm_phase phase);
+    super.build_phase(phase);
+    if(!uvm_config_db#(virtual mif)::get(this, "", "vif", vif)) `uvm_fatal();
+  endtask
+
+  task read_addr_ch;
+   @(vif.cb);
+   if(!req.write) begin
+
+   end
+  endtask
+
+  task run_phase(uvm_phase phase);
+    wait(vif.axresetn === 1'b1);
+
+    forever begin
+      seq_item_port.get_next_item(req);
+      fork
+        read_addr_ch;
+        write_addr_ch;
+        write_data_ch;
+        write_resp_ch;
+        read_data_ch;
+      join_none
+    end
+  endtask
+endclass
+
+
+fork
+  read_addr;
+  write_addr;
+  write_data;
+  write_resp;
+  read_resp;
+join
+
+
+read_addr;
+
+do (vif.cb);
+while(!(vif.cb.arready && arvalid));
+req.araddr  <= vif.cb.araddr;
+req.write <= 0;
+// len
+// burst
+// size
+// id
+//
+
+
+// sel, write, en, ready, slverr
+// strb 4
+
+rand bit pwrite;
+rand bit [31:0] paddr;
+rand bit [31:0] pwdata;
+rand int unsigned delay;
+bit [31:0] prdata;
+bit psverr;
+rand bit [3:0] pstrb;
+
+!pwrite -> pwdata == 0;
+
+sel, write, mlock, ready, resp
+trans 2
+burst size 3
+prot is 4
+
+
+logic hresetn
+logic hsel, hwrite, hmlock, hready, hresp;
+logic [1:0] htrans;
+logic [2:0] hsize, hburst;
+logic [3:0] hprot, hstrb;
+
+write, ready, svlerr
+prot 3, strb 4
+addr
+wdata
+rdata
+
+rand int arr[];
+
+constraint arr_c {
+  arr.size() == 10;
+  foreach(arr[i]) {
+    arr[i] inside {[1:100]};
+    }
+  unique {arr};
+  arr.sum() == 250;
+  }
+
+
+
+rand int arr[];
+constraint arr_c {
+  arr.size() == 20;
+  foreach(arr[i]) {
+    arr[i] inside {0, 1};
+    if (i>0) arr[i] != arr[i-1];
+    }
+  arr.sum() with {item == 1} == 10;
+  }
+
+
+
+  task run_phase(uvm_phase phase);
+    forever begin
+      seq_item_port.get_next_item(req);
+      vif.cb.addr <= req.addr;
+      do @(vif.cb);
+      while (!ready);
+      seq_item_port.item_done();
+    end
+  endtask
+
+  constraint data_c {
+    $countones(data) == 8;
+    data[0] == 1'b1;
+    data[31] == 1'b0;
+    }
+
+rand int x;
+rand bit [31:0] addr;
+
+constraint one {
+  x inside {[0:31};
+  foreach(addr[i]) {
+    if (i >= x && i < x+8)
+      addr[i] == 1'b1;
+    else
+      addr[i] == 1'b0;
+    }
+  }
+
+constraint addr_c {
+  (write == 1) -> addr inside {[8'h00:8'h7f]};
+  (write == 0) -> addr inside {[8'h80:8'hff]};
+  if (write == 1)
+    data > 0;
+  }
+
+class axi_item extends uvm_sequence_item;
+  `uvm_object_utils(axi_item)
+
+  rand bit [31:0] AXADDR;
+  rand bit        write;
+  rand bit [7:0]  AXLEN;
+  rand bit [2:0]  AXSIZE;
+  rand bit [1:0]  AXBURST;
+  rand bit [3:0]  AXID;
+  rand bit [31:0] WDATA [];
+  rand bit [3:0]  WSTRB [];
+
+  bit [31:0] RDATA [$];
+  bit [1:0]  XRESP;
+  bit [3:0]  XID;
+
+  // fixed, incr, wrap
+  constraint len_c {
+    (AXBURST == 2'b00) -> AXLEN inside {1, 3, 7, 15};
+    (AXBURST == 2'b01) -> AXLEN inside {[0:255]};
+    (AXBURST == 2'b10) -> AXLEN inside {0:15};
+    }
+
+  constraint boundary_c {
+    (AXBURST == 2'b01) -> AXADDR[11:0]+(AXLEN+1)<<AXSIZE <= 4096;
+    }
+
+    AXADDR & (32'(1)<<AXSIZE - 1) == 0;
+
+    write == 1 -> WDATA.size() == (AXLEN+1);
+endclass
