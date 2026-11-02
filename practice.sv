@@ -1088,6 +1088,7 @@ class axi_item extends uvm_sequence_item;
   rand bit [31:0] WDATA [];
   rand bit [3:0]  WSTRB [];
 
+  bit req;
   bit [31:0] RDATA [$];
   bit [1:0]  XRESP;
   bit [3:0]  XID;
@@ -1107,3 +1108,353 @@ class axi_item extends uvm_sequence_item;
 
     write == 1 -> WDATA.size() == (AXLEN+1);
 endclass
+
+rand bit write, mlock;
+bit ready, resp;
+bust and size 3
+prot 4, strob 4
+
+rand bit [31:0] addr;
+rand bit [31:0] data [];
+rand bit [2:0] burst, size;
+rand bit [3:0] prot, strb;
+
+
+addr & (1 << size -1) == 0
+
+
+bit [7:0] arr [];
+
+initial begin
+  for(int i = 0; i<arr.size()/2; i++) begin
+    if (i != (arr.size()-1-i)) begin
+      int temp;
+      temp = arr[i];
+      arr[i] = arr[arr.size() - 1 - i];
+      arr[arr.size() - 1 - i] = temp;
+    end
+  end
+end
+
+
+function bit string_reversal(string s);
+  string rs = "";
+  foreach(s[i]) begin
+    rs = {s[i], rs};
+  end
+  return (s == sr);
+endfunction
+
+
+module rev(input wire [`WIDTH-1:0] in, output wire [`WIDTH-1] out);
+  assign out[0:`WIDTH-1] = in[`WIDTH-1:0];
+endmodule
+
+
+function int int_reversal(int a);
+  int ans;
+  while(a != 0) begin
+    ans = a%10 + ans*10;
+    a = a / 10;
+  end
+  return ans;
+endfunction
+
+
+module fibonacci_s(input logic clk, input logic reset, output logic [31:0] ser);
+ logic [1:0] temp;
+// 0 1 1 2 3 5 8 13
+always@(posedge clk) begin
+  if(reset) begin
+    ser <= 'h0;
+    temp <= 1'h1;
+  end
+  else begin
+    ser <= ser + temp;
+    temp <= ser;
+  end
+end
+endmodule
+
+class fibo;
+
+  rand int arr [10];
+
+  constraint fobo_c {
+    arr[0] == 0;
+    arr[1] == 1;
+    foreach(arr[i]) {
+      if (i > 1) arr[i] == arr[i-1] + arr[i-2];
+      }
+    }
+endclass
+
+
+rand int arr[8];
+
+constraint arr_c {
+  unique {arr};
+  foreach(arr[i]) {
+    if (i > 0) arr[i] < arr[i-1];
+    }
+  }
+
+rand int arr[6];
+constraint arr_g {
+  foreach(arr[i]) {
+    if (i > 0) arr[i] == 2 * arr[i-1];
+    }
+  }
+
+*****
+****
+***
+**
+*
+initial begin
+  for(int i = 5; i > 0; i++) begin
+    $display("%s", {i{"*"}});
+  end
+end
+
+initial begin
+  for(int i = 1; i < 5; i++) begin
+     for (int j = 1; j <= i; j++) begin
+       $display("%0d", j);
+     end
+  end
+end
+
+int arr [0:4] [0:4];
+int tarr [0:4] [0:4];
+initial begin
+  for(int i = 0; i < 5; i++) begin
+     for (int j = 0; j < 5; j++) begin
+       tarr[i][j] = arr[j][i];
+     end
+  end
+end
+
+int arr[0:3][0:3];
+constraint arr_c {
+  foreach(arr[i]) {
+    if (i > 0) arr[i].sum() == arr[i-1].sum();
+    foreach(arr[i][j]) {
+      arr[i][j] inside {[1:9]};
+      }
+    }
+  }
+
+
+rand bit [15:0] arr;
+constraint arr_c {
+  $countones(arr) == 5;
+  foreach(arr[i]) {
+    if (i > 1) arr[i-:3] <= 1;
+    }
+  }
+
+
+//I did it for msb first 1011
+
+
+addr & (32'(1)<<size-1) == 0;
+
+
+
+
+task run_task (uvm_phase phase);
+  wait(vif.resetn === 1'b1);
+
+  forever begin
+    fork
+      read_addr_chan;
+      write_addr_chan;
+      write_data_chan;
+      write_response_chan;
+      read_data_chan;
+    join
+  end
+endtask
+
+
+class axi_item extends uvm_sequence_item;
+  object_utils
+
+  rand bit [31:0] AXADDR;
+  rand bit        write;
+  rand bit [7:0]  AXLEN;
+  rand bit [2:0]  AXSIZE;
+  rand bit [1:0]  AXBURST;
+  rand bit [31:0] WDATA [];
+  rand bit [3:0]  WSTRB [];
+  rand bit [3:0]  AXID;
+
+  bit [31:0] rdata [$];
+  bit XID;
+  bit [1:0] XRESP;
+
+endclass
+
+
+class apb_mon extends uvm_monitor;
+  component_utils
+
+  virtual mif vif;
+
+  task run_phase(uvm_phase phase);
+    wait(vif.resetn === 1'b1)
+
+    forever begin
+      do
+        while (psel && pen && pready);
+        sample
+    end
+  endtask
+endclass
+
+(htrans > 1 && hready)
+
+
+// sel, write, mlock, ready, resp
+// trans 2
+// burst and size 3
+// prot 4, strb 4
+//
+
+rand bit hwrite;
+rand bit [2:0] hburst, hsize;
+rand bit [3:0] hstrb;
+rand bit [31:0] haddr;
+rand bit [31:0] hwdata [];
+bit [31:0] hrdata [$];
+bit resp;
+
+
+(valid && ready)
+
+
+
+ahb driver
+
+task run_phase(uvm_phase phase);
+  wait(vif.resetn === 1'b1);
+
+  forever begin
+
+  end
+endtask
+
+
+// sel, write, en, ready, slverr
+// strb 4
+//
+rand bit pwrite;
+rand bit [31:0] paddr;
+rand bit [31:0] pwdata;
+rand bit [3:0] pstrb;
+
+bit [31:0] prdata;
+bit slverr
+
+
+axaddr
+axlen
+axburst
+axsize
+axid
+axvalid
+axready
+
+wlast
+rlast
+wvalid
+rvalid
+rdata
+wdata
+bresp
+rresp
+
+class my_agent extends uvm_agent;
+  seqr s1;
+  driver d1;
+  monitor mon1;
+
+  build them based on is_active
+
+  connect them based on is_active
+  d1.seq_item_port.connect(s1.seq_item_export);
+
+endclass
+
+
+object
+
+class env extends uvm_env;
+  component
+
+  agents
+  scb
+  coverage_collector
+  seqr
+
+  uvm_analysis_fifo#(txn) fifo;
+
+  function new
+  build phase
+  create agents
+  fifo = new("fifo", this);
+
+  connect phase
+  agt.mon.ap.connect(scb.ip);
+endclass
+
+class mytest extends uvm_test;
+  component
+
+  seq1;
+  vseq
+  env;
+
+  function new
+
+  build phase
+  create seq1
+
+  run phase
+  raise objection
+  seq.start(env.agt.seqr)
+
+  vseqr.start(env.vseqr);
+  drop
+endclass
+
+`uvm_analysis_imp_decl()
+
+uvm_tlm_analsis_fifo #(txn) exp_fifo;
+
+exp_fifo = new("exp_fifo", this);
+
+runphase
+forever begin
+exp_fifo.get(item);
+end
+
+inagent.ap.connect
+
+uvm_anaylsis_blocking_put_port #(txn) bp;
+
+bp
+
+function void put(txn t);
+endfunction
+
+
+`uvm_declare_p_sequencer(seqr)
+
+
+UVM_CONFIG_DB_TRACE
+UVM_OBJECTION_TRACE
+UVM_PHASE_TRACE
+
+
